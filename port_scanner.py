@@ -1,5 +1,7 @@
 import socket
-host = "127.0.0.1"
+host = input("Host to scan (Enter for 127.0.0.1): ")
+if host == "":
+    host = "127.0.0.1"
 while True:
     try:
         start = int(input("start port: "))
@@ -16,7 +18,11 @@ for port in range(start, end + 1):
     s.settimeout(1)
     result = s.connect_ex((host, port))
     if result == 0:
+        try:
+            name = socket.getservbyport(port)
+        except OSError:
+            name = "unknown"
         found += 1
-        print(f"port {port} is open")
+        print(f"port {port} is open ({name})")
     s.close()
 print("Open ports found:", found)
