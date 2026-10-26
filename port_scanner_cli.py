@@ -7,12 +7,24 @@ def check_port(host, port, timeout):
     result = s.connect_ex((host, port))
     s.close()
     return result == 0
+def grab_banner(host, port, timeout):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    try:
+        s.connect((host, port))
+        data = s.recv(1024)
+        return data.decode(errors="ignore").strip()
+    except OSError:
+        return ""
+    finally:
+        s.close()
 parser = argparse.ArgumentParser(description="simple threaded TCP port scanner")
 parser.add_argument("host", help="host to scan, e.g, 127.0.0.1")
 parser.add_argument("start", type=int, help="first port")
 parser.add_argument("end", type=int, help="last port")
 parser.add_argument("--timeout", type=float, default=1.0, help="seconds to wait per port(default 1.0)")
-parser.add_argument("--threads", type=int, default=100, help="number of worker threads (default 100)") 
+parser.add_argument("--threads", type=int, default=100, help="number of worker threads (default 100)")
+parser.add_argument("--banner", action="store_true", help="try to read a banner from each open port")
 args = parser.parse_args()
 host = args.host
 start = args.start
@@ -32,5 +44,10 @@ for port, is_open in zip(ports, results):
         except OSError:
             name = "unknown"
         found += 1
-        print(f"port {port} is open ({name})")
+        line = f"port {port} is open ({name})"
+        if args.banner:
+            banner = grab_banner(host, port, args.timeout)
+            if banner:
+                line += f" banner: {banner}"
+        print(line)
 print("Open ports found:", found)
